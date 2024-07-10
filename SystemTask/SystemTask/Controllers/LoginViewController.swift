@@ -19,6 +19,7 @@ class LoginViewController: UIViewController {
     }
     
     @IBAction func LoginTap(_ sender: Any) {
+        //MARK: - login api will get banner token
         guard let email = emailTxt.text, let password = passwordTxt.text else {
                     errorLabel.text = "Please enter email and password. like this email as: apptesting@gmail.com password as : apple@123"
                     return

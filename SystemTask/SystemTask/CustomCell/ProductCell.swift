@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 class ProductCell: UICollectionViewCell {
     static let reuseIdentifier = "ProductCell"
@@ -13,18 +14,69 @@ class ProductCell: UICollectionViewCell {
     @IBOutlet weak var notesLabel: UILabel!
     @IBOutlet weak var descriptionLabel: UILabel!
     
-   
+    @IBOutlet weak var videoPlayerView: UIView!
+    var playerLayer: AVPlayerLayer?
+    var playpauseTimer : Timer?
     
-  
+    let url  = ""// Asset URL
+    var asset: AVAsset!
+    var player: AVPlayer!
+    var playerItem: AVPlayerItem!
+    var playerObserver:AnyObject!
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        self.playerLayer = AVPlayerLayer()
+        // self.playerLayer?.backgroundColor = UIColor.black.cgColor
+        self.playerLayer!.frame = CGRect(x: 0, y: 0, width: self.frame.width, height: self.frame.height)
+        self.playerLayer!.videoGravity = .resizeAspectFill
+        self.videoPlayerView.layer.insertSublayer(self.playerLayer!, at: 0)
+    }
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        imgVU.image = nil
+        playerLayer?.removeFromSuperlayer()
+        playerLayer = nil
+    }
+    public var maximumDuration: TimeInterval {
+        get {
+            if let playerItem = self.playerItem {
+                return CMTimeGetSeconds(playerItem.duration)
+            } else {
+                return CMTimeGetSeconds(CMTime.indefinite)
+            }
+        }
+    }
     
+    public var currentTime: TimeInterval {
+        get {
+            if let playerItem = self.playerItem {
+                return CMTimeGetSeconds(playerItem.currentTime())
+            } else {
+                return CMTimeGetSeconds(CMTime.indefinite)
+            }
+        }
+    }
+    func resetTimer(){
+        if self.playpauseTimer != nil {
+            self.playpauseTimer?.invalidate()
+        }
+    }
     func configure(with product: Post) {
         notesLabel.text = product.notes
         descriptionLabel.text = product.description
-        // Load the first attachment as image
-        if let imageUrl = product.attachments?.first?.url {
-            self.loadImg(urlstring: imageUrl)
+        if let videoURLString = product.attachments?[0].url, let videoURL = URL(string: videoURLString) {
+            let player = AVPlayer(url: videoURL)
+            playerLayer = AVPlayerLayer(player: player)
+            playerLayer?.videoGravity = .resizeAspectFill
+            playerLayer?.frame = videoPlayerView.bounds
+            if let playerLayer = playerLayer {
+                videoPlayerView.layer.addSublayer(playerLayer)
+                player.play()
+            }
         }
+        
     }
+   
     func loadImg(urlstring: String){
         
         if let url = URL(string: urlstring) {
@@ -34,12 +86,24 @@ class ProductCell: UICollectionViewCell {
                 DispatchQueue.main.async {
                     let image = UIImage(data: data)
                     self.imgVU.image = image
-                   
+                    
                 }
             }
             
             task.resume()
         }
+
+        }
+
+    }
+    
+
+
+
+extension ProductCell {
+    func playVideoIfNeeded() {
+        if let playerLayer = playerLayer, playerLayer.player?.rate == 0 {
+            playerLayer.player?.play()
+        }
     }
 }
-
